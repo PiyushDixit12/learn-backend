@@ -4,7 +4,7 @@ import {ApiError} from '../utils/ApiError.js'
 import {uploadOnCloudinary} from '../utils/cloudinaryFile.js';
 import {User} from '../models/User.model.js';
 import {ApiResponse} from '../utils/ApiResponse.js';
-
+import jwt from 'jsonwebtoken';
 
 const generateAccessTokenAndRefreshToken = async (userId) => {
     try {
@@ -74,7 +74,6 @@ const registerUser = asyncHandler(async (req,res) => {
 
 });
 
-
 // User Login 
 const loginUser = asyncHandler(async (req,res) => {
 
@@ -116,6 +115,7 @@ const loginUser = asyncHandler(async (req,res) => {
 
 });
 
+// secure route can'nt run before login
 const logoutUser = asyncHandler(async (req,res) => {
     const user = await User.findByIdAndUpdate(req?.user?._id,
         {
@@ -136,6 +136,34 @@ const logoutUser = asyncHandler(async (req,res) => {
     return res.status(200).clearCookie("accessToken",options).clearCookie("refreshToken",options).json(new ApiResponse(200,{},"User logged out"));
 });
 
+const refreshAccessToken = asyncHandler(async (req,res) => {
+    const incomingToken = req.cookies.refreshToken || req.body.refreshToken;
+    if(!incomingToken) {
+        throw new ApiError(401,"Please provide refreshToken");
+    };
+    try {
+        const decodedToken = jwt.verify(incomingToken,process.env.REFRESH_TOKEN_SECRET);
+        console.log(decodedToken);
+        const user = await User.findById(decodedToken?._id);
+        if(!user) {
+            throw new ApiError(401,"Invalid refresh token");
+        }
+
+        if(incomingToken !== user?.refreshToken) {
+            throw new ApiError(401,"Refresh token is Expired");
+        }
+        const options = {
+            httpOnly: true,
+            secure: true
+        };
+        const {accessToken,refreshToken} = await generateAccessTokenAndRefreshToken(user?._id);
+
+        return res.status(200).cookie("accessToken",accessToken,options).cookie("refreshToken",refreshToken,options).json(new ApiResponse(200,"accessToken and refreshToken generated successfully",{accessToken,refreshToken}));
+    } catch(error) {
+        throw new ApiError(401,"Something Went Wrong while generating accessToken and refreshToken");
+    }
+});
 
 
-export {registerUser,loginUser,logoutUser};
+
+export {registerUser,loginUser,logoutUser,refreshAccessToken};
