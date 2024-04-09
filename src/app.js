@@ -14,7 +14,8 @@ app.use(cors(
 ));
 
 // allowing user body data for post request
-app.use(express.json({limit: "20kb"}));
+// app.use(express.json({limit: "50kb"}));
+app.use(express.json());
 
 // url encoded to get data for search query
 app.use(express.urlencoded({"extended": true,"limit": "20kb"}));
