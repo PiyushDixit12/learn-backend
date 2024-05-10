@@ -1,4 +1,4 @@
-import express from "express";
+import express,{response} from "express";
 import cors from 'cors';
 import cookieParser from "cookie-parser";
 import userRouter from './routes/User.routes.js'
@@ -10,8 +10,89 @@ import commentRouter from "./routes/Comment.routes.js"
 import likeRouter from "./routes/Like.routes.js"
 import playlistRouter from "./routes/PlayList.routes.js"
 import dashboardRouter from "./routes/DashBoard.routes.js"
+import swaggerUi from 'swagger-ui-express';
+import swaggerJSDoc from 'swagger-jsdoc';
 
 const app = express();
+
+// Define Swagger JSDoc options
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'Learn Backend Development',
+            version: '1.0.0',
+            description: 'creating youtube apis from scratch to learn backend with express.js',
+        },
+        servers: [
+            {
+                url: `http://localhost:${process.env.PORT ?? 8080}/api/v1`, // Modify this according to your server URL
+            },
+        ],
+        components: {
+            schemas: {
+                Users: {
+                    type: "object",
+                    required: ["userName","email","password"],
+                    properties: {
+                        userName: {
+                            type: 'string',
+                            description: "user name for user"
+                        },fullName: {
+                            type: 'string',
+                            description: "fullName  for user"
+                        },email: {
+                            type: 'string',
+                            description: "user email for user"
+                        },password: {
+                            type: 'string',
+                            description: "user password for user"
+                        },avatar: {
+                            type: 'file',
+                            description: "avatar image for user"
+                        },coverImage: {
+                            type: 'file',
+                            description: "coverImage image for user"
+                        }
+
+                    }
+                }
+            },
+            responses: {
+                400: {
+                    description: "bad request",
+                    contents: 'application/json'
+                },401: {
+                    description: "Unauthorized",
+                    contents: 'application/json'
+                },404: {
+                    description: "Not Found ",
+                    contents: 'application/json'
+                }
+            },
+            securitySchemes: {
+                ApiKeyAuth: {
+                    type: 'apiKey',
+                    in: 'header',
+                    name: 'Authorization'
+                }
+            }
+        },
+        security: [
+            {
+                ApiKeyAuth: []
+            }
+        ]
+    },
+    apis: ['*/routes/*.routes.js'], // Path to the files containing OpenAPI annotations
+    // apis: ['./app.js'], // Path to the files containing OpenAPI annotations for auto generate
+};
+
+// Initialize Swagger JSDoc
+const swaggerSpec = swaggerJSDoc(swaggerOptions);
+
+// Serve Swagger documentation
+app.use('/api-docs',swaggerUi.serve,swaggerUi.setup(swaggerSpec));
 
 // removing cors error
 app.use(cors(
